@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDF Combiner &amp; Compressor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+<style>
+  :root{
+    color-scheme: light;
+    --navy:#1d1d1f; --teal:#1d1d1f; --teal-deep:#000000;
+    --mint:#f5f5f7; --cream:#ffffff;
+    --ink:#1d1d1f; --ink-soft:#6e6e73;
+    --surface:#ffffff; --surface-2:#f5f5f7;
+    --line:#d2d2d7; --line-strong:#c7c7cc;
+    --danger:#1d1d1f; --warn:#6e6e73;
+    --shadow:0 1px 2px rgba(0,0,0,.04), 0 6px 20px rgba(0,0,0,.05);
+    --serif:'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --sans:'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      color-scheme: dark;
+      --navy:#f5f5f7; --teal:#f5f5f7; --teal-deep:#ffffff;
+      --mint:#2c2c2e; --cream:#000000;
+      --ink:#f5f5f7; --ink-soft:#98989d;
+      --surface:#1c1c1e; --surface-2:#2c2c2e;
+      --line:#38383a; --line-strong:#48484a;
+      --danger:#f5f5f7; --warn:#98989d;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.4);
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:var(--sans);color:var(--ink);background:var(--cream);line-height:1.5;-webkit-font-smoothing:antialiased;padding:32px 20px 64px}
+  .wrap{max-width:760px;margin:0 auto}
+  header{margin-bottom:22px}
+  .kicker{font-size:13px;letter-spacing:.02em;color:var(--teal);font-weight:600;margin:0 0 6px}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(28px,5.5vw,40px);line-height:1.07;margin:0 0 8px;color:var(--navy);letter-spacing:-.022em}
+  .sub{margin:0;color:var(--ink-soft);max-width:54ch;font-size:15px}
+  .sub b{color:var(--ink);font-weight:600}
+  .modes{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:4px;margin-top:22px;gap:4px}
+  .modes button{font-family:var(--sans);font-weight:600;font-size:14px;border:none;background:transparent;color:var(--ink-soft);padding:8px 18px;border-radius:8px;cursor:pointer;transition:background .15s,color .15s}
+  .modes button[aria-selected="true"]{background:var(--surface);color:var(--navy);box-shadow:var(--shadow)}
+  .modes button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+  .drop{margin-top:20px;border:1.5px dashed var(--line-strong);border-radius:16px;background:var(--surface);padding:34px 24px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s,transform .05s}
+  .drop:hover{border-color:var(--teal)}
+  .drop.drag{border-color:var(--teal);background:var(--mint)}
+  .drop:active{transform:scale(.997)}
+  .drop .icon{width:46px;height:46px;margin:0 auto 12px;border-radius:12px;background:var(--mint);display:grid;place-items:center;color:var(--teal-deep)}
+  .drop h2{font-family:var(--serif);font-weight:500;font-size:20px;margin:0 0 4px;color:var(--navy)}
+  .drop p{margin:0;color:var(--ink-soft);font-size:14px}
+  .drop .browse{color:var(--teal-deep);font-weight:600;text-decoration:underline;text-underline-offset:2px}
+  .listhead{display:flex;align-items:baseline;justify-content:space-between;margin:26px 0 10px}
+  .listhead h3{font-family:var(--serif);font-weight:500;font-size:18px;margin:0;color:var(--navy)}
+  .count{font-size:13px;color:var(--ink-soft)}
+  ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+  li.file{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow)}
+  li.file.dragging{opacity:.5}
+  li.file.over{border-color:var(--teal);box-shadow:0 0 0 2px var(--mint)}
+  .grip{cursor:grab;color:var(--ink-soft);display:grid;place-items:center;width:22px;flex:0 0 auto;touch-action:none}
+  .grip.hide{visibility:hidden}
+  .seq{flex:0 0 auto;width:26px;height:26px;border-radius:7px;background:var(--navy);color:#fff;font-size:13px;font-weight:600;display:grid;place-items:center}
+  @media (prefers-color-scheme: dark){.seq{color:#000}}
+  .meta{flex:1 1 auto;min-width:0}
+  .meta .name{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+  .meta .sub2{font-size:12.5px;color:var(--ink-soft)}
+  .meta .sub2.err{color:var(--danger);font-weight:600}
+  .rowbtns{display:flex;gap:2px;flex:0 0 auto}
+  .iconbtn{border:none;background:transparent;color:var(--ink-soft);width:30px;height:30px;border-radius:8px;cursor:pointer;display:grid;place-items:center;transition:background .12s,color .12s}
+  .iconbtn:hover{background:var(--mint);color:var(--teal-deep)}
+  .iconbtn:disabled{opacity:.3;cursor:default}
+  .iconbtn:disabled:hover{background:transparent;color:var(--ink-soft)}
+  .iconbtn.del:hover{background:rgba(178,59,59,.1);color:var(--danger)}
+  .iconbtn.hide{display:none}
+  .iconbtn:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+  .panel{margin-top:26px;border-top:1px solid var(--line);padding-top:20px}
+  .methods{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:4px;gap:4px;margin-bottom:16px}
+  .method{font-family:var(--sans);border:none;background:transparent;color:var(--ink-soft);padding:7px 15px;border-radius:7px;cursor:pointer;text-align:center;line-height:1.15;transition:background .15s,color .15s}
+  .method strong{display:block;font-size:13.5px;font-weight:700}
+  .method small{display:block;font-size:11px;opacity:.85;font-weight:500}
+  .method[aria-pressed="true"]{background:var(--surface);color:var(--navy);box-shadow:var(--shadow)}
+  .method:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+  .levels{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+  .level{text-align:left;background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:13px 14px;cursor:pointer;transition:border-color .15s,background .15s}
+  .level:hover{border-color:var(--line-strong)}
+  .level[aria-pressed="true"]{border-color:var(--teal);background:var(--mint)}
+  .level .lv-name{font-weight:700;font-size:14px;color:var(--navy);margin-bottom:2px}
+  .level .lv-desc{font-size:12px;color:var(--ink-soft);line-height:1.35}
+  .level:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+  .custombox{display:none;margin-bottom:16px}
+  .custombox.show{display:block}
+  .custombox label{font-size:12.5px;color:var(--ink-soft);font-weight:600;display:block;margin-bottom:6px}
+  .custombox .row{display:flex;align-items:center;gap:0;max-width:220px}
+  .custombox input{font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:9px 0 0 9px;padding:9px 11px;border-right:none;width:100%}
+  .custombox input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 2px var(--mint)}
+  .custombox .unit{background:var(--surface-2);border:1px solid var(--line);border-left:none;border-radius:0 9px 9px 0;padding:9px 13px;font-size:14px;color:var(--ink-soft)}
+  .bar{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;justify-content:space-between}
+  .fname{display:flex;flex-direction:column;gap:4px;flex:1 1 220px;min-width:0}
+  .fname label{font-size:12.5px;color:var(--ink-soft);font-weight:600}
+  .fname .field{display:flex;align-items:center}
+  .fname input{font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:9px 0 0 9px;padding:9px 11px;flex:1 1 auto;min-width:0;border-right:none}
+  .fname input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 2px var(--mint)}
+  .fname .ext{background:var(--surface-2);border:1px solid var(--line);border-left:none;border-radius:0 9px 9px 0;padding:9px 11px;font-size:14px;color:var(--ink-soft)}
+  .go{font-family:var(--sans);font-weight:600;font-size:15px;background:var(--teal);color:#fff;border:none;border-radius:10px;padding:12px 22px;cursor:pointer;transition:background .15s,transform .05s;display:inline-flex;align-items:center;gap:9px;flex:0 0 auto}
+  @media (prefers-color-scheme: dark){.go{color:#000}}
+  .go:hover:not(:disabled){background:var(--teal-deep)}
+  .go:active:not(:disabled){transform:translateY(1px)}
+  .go:disabled{opacity:.4;cursor:default}
+  .go .spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;display:none}
+  .go.busy .spin{display:inline-block}
+  .go.busy .label-go{display:none}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .hub{display:inline-block;font-size:13px;font-weight:600;letter-spacing:-.01em;color:var(--ink-soft);text-decoration:none;margin-bottom:18px;transition:color .15s}
+  .hub:hover{color:var(--ink)}
+  .hub span{opacity:.55;margin-right:5px}
+  .note{margin-top:16px;font-size:12.5px;color:var(--ink-soft);display:flex;gap:7px;align-items:flex-start}
+  .note svg{flex:0 0 auto;margin-top:1px;color:var(--teal)}
+  .status{margin-top:14px;font-size:14px;font-weight:600;min-height:20px}
+  .status.ok{color:var(--teal-deep)} .status.bad{color:var(--danger)} .status.warn{color:var(--warn)}
+  .hide-sec{display:none}
+  @media (max-width:560px){ body{padding:22px 14px 48px} .levels{grid-template-columns:1fr} .bar{flex-direction:column;align-items:stretch} .go{justify-content:center} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="hub" href="https://trivialkits.github.io/"><span>&larr;</span>TrivialKits</a>
+  <header>
+    <h1>PDF Combiner &amp; Compressor</h1>
+    <p class="sub">Merge PDFs, or shrink them. Keep text re-saves images and re-compresses every stream losslessly; Flatten renders pages to hit a target. Everything runs in your browser, so <b>nothing is uploaded</b>.</p>
+  </header>
+  <div class="modes" role="tablist" aria-label="Mode">
+    <button id="tab-combine" role="tab" aria-selected="true">Combine</button>
+    <button id="tab-compress" role="tab" aria-selected="false">Compress</button>
+  </div>
+  <div class="drop" id="drop" tabindex="0" role="button" aria-label="Add PDF files">
+    <div class="icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
+    <h2>Add PDFs</h2>
+    <p>Drag files here, or <span class="browse">browse</span></p>
+    <input type="file" id="picker" accept="application/pdf,.pdf" multiple hidden>
+  </div>
+  <section id="listsec" class="hide-sec">
+    <div class="listhead"><h3 id="listtitle">Files to merge</h3><span class="count" id="count"></span></div>
+    <ul id="list"></ul>
+    <div class="panel" id="panel-combine">
+      <div class="bar">
+        <div class="fname"><label for="outname">Output file name</label><div class="field"><input type="text" id="outname" value="combined" spellcheck="false"><span class="ext">.pdf</span></div></div>
+        <button class="go" id="mergebtn"><span class="spin" aria-hidden="true"></span><span class="label-go">Merge &amp; download</span></button>
+      </div>
+    </div>
+    <div class="panel hide-sec" id="panel-compress">
+      <div class="methods" role="group" aria-label="Compression method">
+        <button class="method" data-method="keep" aria-pressed="true"><strong>Keep text</strong><small>sharper · text stays</small></button>
+        <button class="method" data-method="flatten" aria-pressed="false"><strong>Flatten</strong><small>smaller · no text select</small></button>
+      </div>
+      <div class="levels" role="group" aria-label="Compression level">
+        <button class="level" data-level="high" aria-pressed="false"><div class="lv-name">High</div><div class="lv-desc" data-keep="Images re-saved small, then all streams re-packed. Text stays." data-flatten="Pages rendered at ~110 ppi. Smallest. Text becomes image.">Images re-saved small, then all streams re-packed. Text stays.</div></button>
+        <button class="level" data-level="medium" aria-pressed="true"><div class="lv-name">Medium</div><div class="lv-desc" data-keep="Images re-saved gently, then all streams re-packed. Text stays." data-flatten="Pages rendered at ~150 ppi. Sharper. Text becomes image.">Images re-saved gently, then all streams re-packed. Text stays.</div></button>
+        <button class="level" data-level="custom" aria-pressed="false"><div class="lv-name">Custom</div><div class="lv-desc" data-keep="Target size; image quality tuned, streams re-packed. Has a floor." data-flatten="Set a target size; render quality is tuned to approach it.">Target size; image quality tuned, streams re-packed. Has a floor.</div></button>
+      </div>
+      <div class="custombox" id="custombox"><label for="target">Target size</label><div class="row"><input type="number" id="target" min="0.1" step="0.1" value="5"><span class="unit">MB</span></div></div>
+      <div class="bar">
+        <div class="fname"><label for="coutname">Output file name</label><div class="field"><input type="text" id="coutname" value="compressed" spellcheck="false"><span class="ext">.pdf</span></div></div>
+        <button class="go" id="compressbtn"><span class="spin" aria-hidden="true"></span><span class="label-go">Compress &amp; download</span></button>
+      </div>
+    </div>
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+  </section>
+  <p class="note">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    <span id="note-text">Files are processed on this device only. Reorder by dragging a row or using the arrow buttons.</span>
+  </p>
+</div>
+<script>
+const { PDFDocument, PDFName, PDFNumber, PDFRawStream, PDFArray } = PDFLib;
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let files=[], uid=0, mode='combine', level='medium', method='keep';
+const $=id=>document.getElementById(id);
+const dropEl=$('drop'),picker=$('picker'),listEl=$('list'),listSec=$('listsec'),countEl=$('count'),statusEl=$('status'),listTitle=$('listtitle'),noteText=$('note-text');
+const mergeBtn=$('mergebtn'),outName=$('outname');
+const compressBtn=$('compressbtn'),coutName=$('coutname'),customBox=$('custombox'),targetInput=$('target');
+const panelCombine=$('panel-combine'),panelCompress=$('panel-compress'),tabCombine=$('tab-combine'),tabCompress=$('tab-compress');
+
+function fmtSize(b){ if(b<1024)return b+' B'; if(b<1048576)return (b/1024).toFixed(0)+' KB'; return (b/1048576).toFixed(2)+' MB'; }
+function setStatus(m,k){ statusEl.textContent=m||''; statusEl.className='status'+(k?' '+k:''); }
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+function compressNote(){
+  return method==='keep'
+    ? 'Keep text: JPEG images are re-saved smaller, over-precise vector coordinates are trimmed, then every stream is re-compressed at maximum. Text, vectors and layout stay intact. There is still a floor set by the vector content.'
+    : 'Flatten: each page is rendered to an image, so the file can drop below the text/vector floor, but selectable text and crisp edges are lost. Very long or complex pages may be slow in the browser.';
+}
+function refreshCopy(){ document.querySelectorAll('.lv-desc').forEach(d=>d.innerHTML=d.getAttribute('data-'+method)); if(mode==='compress') noteText.textContent=compressNote(); }
+function setMode(m){ mode=m; const c=m==='combine'; tabCombine.setAttribute('aria-selected',c); tabCompress.setAttribute('aria-selected',!c); panelCombine.classList.toggle('hide-sec',!c); panelCompress.classList.toggle('hide-sec',c); noteText.textContent=c?'Files are processed on this device only. Reorder by dragging a row or using the arrow buttons.':compressNote(); render(); refreshCopy(); setStatus(''); }
+tabCombine.onclick=()=>setMode('combine'); tabCompress.onclick=()=>setMode('compress');
+
+async function addFiles(fl){
+  const inc=Array.from(fl).filter(f=>f.type==='application/pdf'||/\.pdf$/i.test(f.name));
+  if(!inc.length){ setStatus('Those were not PDFs. Add .pdf files only.','bad'); return; }
+  setStatus('');
+  for(const f of inc){
+    const e={id:++uid,name:f.name,size:f.size,bytes:null,pageCount:null,error:null}; files.push(e);
+    try{ e.bytes=new Uint8Array(await f.arrayBuffer()); e.pageCount=(await PDFDocument.load(e.bytes,{ignoreEncryption:true})).getPageCount(); }
+    catch(err){ e.error='Could not read this PDF'; }
+    render();
+  }
+}
+function move(id,d){ const i=files.findIndex(f=>f.id===id),j=i+d; if(j<0||j>=files.length)return; [files[i],files[j]]=[files[j],files[i]]; render(); }
+function remove(id){ files=files.filter(f=>f.id!==id); render(); if(!files.length)setStatus(''); }
+function render(){
+  listSec.classList.toggle('hide-sec', files.length===0);
+  const tp=files.reduce((s,f)=>s+(f.pageCount||0),0), rd=files.filter(f=>!f.error).length;
+  countEl.textContent=files.length+(files.length===1?' file':' files')+(tp?' · '+tp+(tp===1?' page':' pages'):'');
+  mergeBtn.disabled=rd<1; compressBtn.disabled=rd<1;
+  listTitle.textContent=(mode==='compress')?(files.length>1?'Files (merged, then compressed)':'File to compress'):'Files to merge';
+  const ro=mode==='combine'; listEl.innerHTML='';
+  files.forEach((f,idx)=>{ const li=document.createElement('li'); li.className='file'; li.draggable=ro; li.dataset.id=f.id;
+    li.innerHTML=`<span class="grip ${ro?'':'hide'}" aria-hidden="true" title="Drag to reorder"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span>
+      <span class="seq">${idx+1}</span>
+      <span class="meta"><span class="name" title="${f.name.replace(/"/g,'&quot;')}">${f.name.replace(/</g,'&lt;')}</span><span class="sub2 ${f.error?'err':''}">${f.error?f.error:(f.pageCount===null?'Reading…':f.pageCount+(f.pageCount===1?' page':' pages')+' · '+fmtSize(f.size))}</span></span>
+      <span class="rowbtns">
+        <button class="iconbtn up ${ro?'':'hide'}" title="Move up" ${idx===0?'disabled':''} aria-label="Move up"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>
+        <button class="iconbtn down ${ro?'':'hide'}" title="Move down" ${idx===files.length-1?'disabled':''} aria-label="Move down"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        <button class="iconbtn del" title="Remove" aria-label="Remove"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+      </span>`;
+    if(ro){ li.querySelector('.up').onclick=()=>move(f.id,-1); li.querySelector('.down').onclick=()=>move(f.id,1); }
+    li.querySelector('.del').onclick=()=>remove(f.id); listEl.appendChild(li);
+  });
+}
+let dragId=null;
+listEl.addEventListener('dragstart',e=>{ if(mode!=='combine')return; const li=e.target.closest('li.file'); if(!li)return; dragId=Number(li.dataset.id); li.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
+listEl.addEventListener('dragend',e=>{ const li=e.target.closest('li.file'); if(li)li.classList.remove('dragging'); document.querySelectorAll('li.file.over').forEach(n=>n.classList.remove('over')); dragId=null; });
+listEl.addEventListener('dragover',e=>{ if(mode!=='combine')return; e.preventDefault(); const li=e.target.closest('li.file'); if(!li)return; document.querySelectorAll('li.file.over').forEach(n=>n.classList.remove('over')); li.classList.add('over'); });
+listEl.addEventListener('drop',e=>{ if(mode!=='combine')return; e.preventDefault(); const li=e.target.closest('li.file'); if(!li||dragId===null)return; const t=Number(li.dataset.id); if(t===dragId)return; const fr=files.findIndex(f=>f.id===dragId),to=files.findIndex(f=>f.id===t); const [m]=files.splice(fr,1); files.splice(to,0,m); render(); });
+dropEl.addEventListener('click',()=>picker.click());
+dropEl.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); picker.click(); }});
+picker.addEventListener('change',e=>{ addFiles(e.target.files); picker.value=''; });
+['dragenter','dragover'].forEach(ev=>dropEl.addEventListener(ev,e=>{ e.preventDefault(); dropEl.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev=>dropEl.addEventListener(ev,e=>{ e.preventDefault(); if(ev==='drop'||!dropEl.contains(e.relatedTarget)) dropEl.classList.remove('drag'); }));
+dropEl.addEventListener('drop',e=>{ if(e.dataTransfer.files&&e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
+document.querySelectorAll('.method').forEach(b=>b.addEventListener('click',()=>{ method=b.dataset.method; document.querySelectorAll('.method').forEach(x=>x.setAttribute('aria-pressed',x===b)); refreshCopy(); setStatus(''); }));
+document.querySelectorAll('.level').forEach(b=>b.addEventListener('click',()=>{ level=b.dataset.level; document.querySelectorAll('.level').forEach(x=>x.setAttribute('aria-pressed',x===b)); customBox.classList.toggle('show',level==='custom'); }));
+function safeName(v,fb){ return (v||fb).trim().replace(/\.pdf$/i,'').replace(/[\/\\:*?"<>|]/g,'')||fb; }
+function download(bytes,name){ const u=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})); const a=document.createElement('a'); a.href=u; a.download=name+'.pdf'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),4000); }
+
+/* MERGE */
+async function mergeDoc(list){ const out=await PDFDocument.create(); for(const f of list){ const s=await PDFDocument.load(f.bytes,{ignoreEncryption:true}); const pg=await out.copyPages(s,s.getPageIndices()); pg.forEach(p=>out.addPage(p)); } return out; }
+mergeBtn.addEventListener('click',async()=>{
+  const u=files.filter(f=>f.bytes&&!f.error); if(!u.length){ setStatus('No readable PDFs to merge.','bad'); return; }
+  mergeBtn.classList.add('busy'); mergeBtn.disabled=true; setStatus('Merging '+u.length+' files…');
+  try{ const out=await mergeDoc(u); const b=await out.save(); const n=safeName(outName.value,'combined'); download(b,n); setStatus('Done. '+n+'.pdf · '+out.getPageCount()+' pages · '+fmtSize(b.length)+' downloaded.','ok'); }
+  catch(err){ setStatus('Merge failed: '+(err&&err.message?err.message:'unknown error'),'bad'); }
+  finally{ mergeBtn.classList.remove('busy'); mergeBtn.disabled=false; }
+});
+
+/* ===== KEEP TEXT ===== */
+function eligibleImage(dict){
+  try{
+    if(dict.lookup(PDFName.of('Subtype'))?.toString()!=='/Image') return false;
+    if(dict.lookup(PDFName.of('ImageMask'))?.toString()==='true') return false;
+    if(dict.get(PDFName.of('Mask'))) return false;
+    let filt=dict.lookup(PDFName.of('Filter')),fn;
+    if(filt instanceof PDFArray){ if(filt.size()!==1)return false; fn=filt.lookup(0)?.toString(); } else fn=filt?.toString();
+    if(fn!=='/DCTDecode') return false;
+    let cs=dict.lookup(PDFName.of('ColorSpace'));
+    if(cs){ if(cs instanceof PDFArray){ const k=cs.lookup(0)?.toString(); if(k==='/ICCBased'){ const st=cs.lookup(1); const n=st?.dict?.lookup(PDFName.of('N')); if((n?n.asNumber():0)===4)return false; } else return false; } else if(cs.toString()==='/DeviceCMYK') return false; }
+    return true;
+  }catch(e){ return false; }
+}
+async function collectImages(doc,onP){
+  const entries=doc.context.enumerateIndirectObjects(), smask=new Set();
+  for(const [,o] of entries){ if(o instanceof PDFRawStream){ const sm=o.dict.get(PDFName.of('SMask')); if(sm&&sm.objectNumber!=null) smask.add(sm.objectNumber+'_'+sm.generationNumber); } }
+  const items=[];
+  for(const [ref,o] of entries){ const key=ref.objectNumber+'_'+ref.generationNumber; if(o instanceof PDFRawStream && !smask.has(key) && eligibleImage(o.dict)) items.push({ref,stream:o}); }
+  const dec=[];
+  for(let i=0;i<items.length;i++){ const {ref,stream}=items[i]; try{ const raw=stream.contents; const bmp=await createImageBitmap(new Blob([raw],{type:'image/jpeg'})); dec.push({ref,dict:stream.dict,bmp,origLen:raw.length,w:bmp.width,h:bmp.height}); }catch(e){} if(onP)onP(i+1,items.length); }
+  return dec;
+}
+async function encodeImage(it,maxDim,q){
+  const sc=Math.min(1,maxDim/Math.max(it.w,it.h)), w=Math.max(1,Math.round(it.w*sc)), h=Math.max(1,Math.round(it.h*sc));
+  const c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,w,h); x.drawImage(it.bmp,0,0,w,h);
+  const bl=await new Promise(r=>c.toBlob(r,'image/jpeg',q)); return { buf:new Uint8Array(await bl.arrayBuffer()), w, h };
+}
+function replaceImage(doc,it,enc){ const d=it.dict; d.set(PDFName.of('Width'),PDFNumber.of(enc.w)); d.set(PDFName.of('Height'),PDFNumber.of(enc.h)); d.set(PDFName.of('ColorSpace'),PDFName.of('DeviceRGB')); d.set(PDFName.of('BitsPerComponent'),PDFNumber.of(8)); d.set(PDFName.of('Filter'),PDFName.of('DCTDecode')); d.delete(PDFName.of('DecodeParms')); d.delete(PDFName.of('Decode')); doc.context.assign(it.ref,PDFRawStream.of(d,enc.buf)); }
+async function applyImages(doc,imgs,maxDim,q,onP){ for(let i=0;i<imgs.length;i++){ const e=await encodeImage(imgs[i],maxDim,q); if(e.buf.length<imgs[i].origLen) replaceImage(doc,imgs[i],e); if(onP)onP(i+1,imgs.length); } }
+async function predictImages(imgs,maxDim,q){ let s=0; for(const im of imgs){ const e=await encodeImage(im,maxDim,q); s+=Math.min(e.buf.length,im.origLen); } return s; }
+const keepStrength=s=>({maxDim:Math.round(900+3100*s),quality:+(0.30+0.60*s).toFixed(3)});
+
+// Trim padded/over-precise decimals in content-stream text, skipping ( ) and < > strings. Lossless to the eye.
+function trimNumbers(data, nd){
+  const n=data.length, out=new Uint8Array(n); let w=0,i=0,depth=0,inhex=false;
+  while(i<n){
+    const b=data[i];
+    if(depth>0){ out[w++]=b; if(b===0x5c){ i++; if(i<n) out[w++]=data[i]; i++; continue; } if(b===0x28)depth++; else if(b===0x29)depth--; i++; continue; }
+    if(inhex){ out[w++]=b; if(b===0x3e)inhex=false; i++; continue; }
+    if(b===0x28){ depth=1; out[w++]=b; i++; continue; }
+    if(b===0x3c){ if(i+1<n && data[i+1]===0x3c){ out[w++]=b; out[w++]=data[i+1]; i+=2; continue; } inhex=true; out[w++]=b; i++; continue; }
+    let j=i; if(data[j]===0x2b||data[j]===0x2d) j++;
+    let k=j,hasd=false,hasdot=false;
+    while(k<n && ((data[k]>=48&&data[k]<=57)||data[k]===0x2e)){ if(data[k]===0x2e){ if(hasdot)break; hasdot=true; } else hasd=true; k++; }
+    if(hasd&&hasdot){
+      let tok=''; for(let p=i;p<k;p++) tok+=String.fromCharCode(data[p]);
+      let f=parseFloat(tok), s;
+      if(Number.isFinite(f)){ if(f===Math.trunc(f)) s=String(Math.trunc(f)); else { s=f.toFixed(nd).replace(/0+$/,'').replace(/\.$/,''); if(s===''||s==='-0'||s==='-') s='0'; } }
+      else s=tok;
+      for(let p=0;p<s.length;p++) out[w++]=s.charCodeAt(p);
+      i=k; continue;
+    }
+    out[w++]=b; i++;
+  }
+  return out.subarray(0,w);
+}
+// Lossless re-pack: trim coordinate precision in text streams, then re-deflate every FlateDecode stream at max.
+async function reDeflateAll(doc,onP){
+  const entries=doc.context.enumerateIndirectObjects();
+  const flate=[];
+  for(const [ref,o] of entries){ if(o instanceof PDFRawStream){ const f=o.dict.lookup(PDFName.of('Filter')); if(f && f.toString()==='/FlateDecode') flate.push({ref,stream:o}); } }
+  let saved=0;
+  for(let i=0;i<flate.length;i++){
+    const {ref,stream}=flate[i];
+    try{
+      const raw=stream.contents;
+      let data=pako.inflate(raw);
+      // only trim numbers when the inflated payload is text (a content stream), never binary/predictor data
+      const lim=Math.min(400,data.length); let pr=0;
+      for(let p=0;p<lim;p++){ const c=data[p]; if(c>=9&&c<=126) pr++; }
+      let trimmed=false;
+      if(lim>0 && pr/lim>=0.95){ data=trimNumbers(data,3); trimmed=true; }
+      const re=pako.deflate(data,{level:9});
+      if(re.length<raw.length){ const d=stream.dict; if(trimmed){ try{ d.delete(PDFName.of('DecodeParms')); }catch(e){} } doc.context.assign(ref,PDFRawStream.of(d,re)); saved+=raw.length-re.length; }
+    }catch(e){}
+    if(onP && (i%300===0 || i===flate.length-1)){ onP(i+1,flate.length); await sleep(0); }
+  }
+  return saved;
+}
+
+/* ===== FLATTEN ===== */
+const TILE_PX=4000;
+async function renderPageTiles(page,dpi){
+  const scale=dpi/72, vp=page.getViewport({scale}); const Wp=Math.max(1,Math.ceil(vp.width)),Hp=Math.max(1,Math.ceil(vp.height));
+  const ptW=Wp/scale, ptH=Hp/scale, tiles=[]; let y=0;
+  while(y<Hp){ const th=Math.min(TILE_PX,Hp-y); const c=document.createElement('canvas'); c.width=Wp; c.height=th; const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,Wp,th);
+    await page.render({canvasContext:x,viewport:vp,transform:[1,0,0,1,0,-y]}).promise; tiles.push({c,topPt:y/scale,bandPt:th/scale}); y+=th; await sleep(0); }
+  return {tiles,ptW,ptH};
+}
+async function flatten(srcBytes,dpi,q,onP){
+  const pdf=await pdfjsLib.getDocument({data:srcBytes.slice(0)}).promise; const out=await PDFDocument.create(); const N=pdf.numPages;
+  try{ for(let i=1;i<=N;i++){ const page=await pdf.getPage(i); const {tiles,ptW,ptH}=await renderPageTiles(page,dpi); const op=out.addPage([ptW,ptH]);
+      for(let t=0;t<tiles.length;t++){ if(onP)onP(i,N,t+1,tiles.length); const tl=tiles[t]; const bl=await new Promise(r=>tl.c.toBlob(r,'image/jpeg',q)); const img=await out.embedJpg(new Uint8Array(await bl.arrayBuffer())); op.drawImage(img,{x:0,y:ptH-tl.topPt-tl.bandPt,width:ptW,height:tl.bandPt}); tl.c.width=tl.c.height=0; await sleep(0); }
+      if(page.cleanup)page.cleanup(); }
+    return await out.save(); } finally{ await pdf.destroy(); }
+}
+const flattenStrength=s=>({dpi:Math.round(72+148*s),quality:+(0.40+0.50*s).toFixed(3)});
+
+/* ===== compress button ===== */
+compressBtn.addEventListener('click',async()=>{
+  const u=files.filter(f=>f.bytes&&!f.error); if(!u.length){ setStatus('No readable PDFs to compress.','bad'); return; }
+  compressBtn.classList.add('busy'); compressBtn.disabled=true; const name=safeName(coutName.value,'compressed');
+  try{
+    let srcBytes;
+    if(u.length>1){ setStatus('Merging '+u.length+' files…'); await sleep(10); srcBytes=await (await mergeDoc(u)).save(); } else srcBytes=u[0].bytes;
+    const baseline=srcBytes.length;
+    let outBytes;
+
+    if(method==='keep'){
+      setStatus('Reading images…'); await sleep(10);
+      const doc=await PDFDocument.load(srcBytes,{ignoreEncryption:true});
+      const imgs=await collectImages(doc,(i,n)=>setStatus('Reading image '+i+' of '+n+'…'));
+
+      if(level==='high'||level==='medium'){
+        const p=level==='high'?{maxDim:1400,quality:0.5}:{maxDim:2400,quality:0.72};
+        if(imgs.length){ setStatus('Compressing '+imgs.length+' images…'); await sleep(10); await applyImages(doc,imgs,p.maxDim,p.quality,(i,n)=>setStatus('Compressing image '+i+' of '+n+'…')); }
+        setStatus('Re-packing streams (lossless)…'); await sleep(10);
+        await reDeflateAll(doc,(i,n)=>setStatus('Re-packing stream '+i+' of '+n+'…'));
+        setStatus('Writing file…'); await sleep(10);
+        outBytes=await doc.save({useObjectStreams:true});
+      } else {
+        const tMB=parseFloat(targetInput.value); if(!(tMB>0)){ setStatus('Enter a target size in MB.','bad'); return; }
+        const target=tMB*1048576;
+        // lossless re-pack first so the floor is as low as possible
+        setStatus('Re-packing streams (lossless)…'); await sleep(10);
+        await reDeflateAll(doc,(i,n)=>setStatus('Re-packing stream '+i+' of '+n+'…'));
+        setStatus('Measuring floor…'); await sleep(10);
+        const optBytes=await doc.save({useObjectStreams:true}); const optBaseline=optBytes.length;
+        const imgSum=imgs.reduce((s,im)=>s+im.origLen,0); const overhead=optBaseline-imgSum;
+        if(!imgs.length || overhead>=target){
+          outBytes=optBytes;
+          if(outBytes.length>target){ download(outBytes,name); setStatus('Keep text cannot reach '+tMB+' MB. The text/vector floor is about '+fmtSize(outBytes.length)+' (images are a small part here). Downloaded the smallest lossless version. Use Flatten to go below this.','warn'); return; }
+        } else {
+          let lo=0,hi=1,pick=null;
+          for(let k=0;k<7;k++){ const s=(lo+hi)/2; const p=keepStrength(s); setStatus('Tuning to target ('+(k+1)+'/7)…'); await sleep(0); const pred=overhead+await predictImages(imgs,p.maxDim,p.quality); if(pred<=target){pick=p;lo=s;}else hi=s; }
+          const chosen=pick||keepStrength(0);
+          setStatus('Compressing '+imgs.length+' images…'); await sleep(10);
+          await applyImages(doc,imgs,chosen.maxDim,chosen.quality,(i,n)=>setStatus('Compressing image '+i+' of '+n+'…'));
+          setStatus('Writing file…'); await sleep(10);
+          outBytes=await doc.save({useObjectStreams:true});
+          if(!pick){ download(outBytes,name); setStatus('Closest keep-text size is '+fmtSize(outBytes.length)+', above '+tMB+' MB (vector/text floor). Downloaded. Use Flatten to go smaller.','warn'); return; }
+        }
+      }
+    } else {
+      if(level==='high'||level==='medium'){
+        const p=level==='high'?{dpi:110,quality:0.6}:{dpi:150,quality:0.78};
+        setStatus('Flattening pages…'); await sleep(10);
+        outBytes=await flatten(srcBytes,p.dpi,p.quality,(pg,n,t,tn)=>setStatus('Rendering page '+pg+'/'+n+(tn>1?' (tile '+t+'/'+tn+')':'')+'…'));
+      } else {
+        const tMB=parseFloat(targetInput.value); if(!(tMB>0)){ setStatus('Enter a target size in MB.','bad'); return; } const target=tMB*1048576;
+        let lo=0,hi=1,best=null,under=null;
+        for(let k=0;k<5;k++){ const s=(lo+hi)/2; const p=flattenStrength(s); const bytes=await flatten(srcBytes,p.dpi,p.quality,(pg,n,t,tn)=>setStatus('Pass '+(k+1)+'/5: page '+pg+'/'+n+(tn>1?' tile '+t+'/'+tn:'')+'…')); if(!best||bytes.length<best.length)best=bytes; if(bytes.length<=target){under=bytes;lo=s;}else hi=s; }
+        outBytes=under||best;
+        if(!under){ download(outBytes,name); setStatus('Smallest achievable is '+fmtSize(outBytes.length)+', just above '+tMB+' MB. Downloaded anyway.','warn'); return; }
+      }
+    }
+
+    if(outBytes.length>=baseline){ download(outBytes,name); setStatus('Result ('+fmtSize(outBytes.length)+') is not smaller than the original ('+fmtSize(baseline)+'). Downloaded anyway. Try the other method or a stronger level.','warn'); return; }
+    download(outBytes,name);
+    const pct=Math.round((1-outBytes.length/baseline)*100);
+    setStatus('Done. '+fmtSize(baseline)+' → '+fmtSize(outBytes.length)+' ('+pct+'% smaller). '+(method==='keep'?'Text & layout kept.':'Pages flattened to images.')+' '+name+'.pdf downloaded.','ok');
+  }catch(err){ setStatus('Compress failed: '+(err&&err.message?err.message:'unknown error'),'bad'); }
+  finally{ compressBtn.classList.remove('busy'); compressBtn.disabled=false; }
+});
+setMode('combine');
+</script>
+</body>
+</html>

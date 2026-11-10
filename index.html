@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TrivialKits</title>
+<meta name="description" content="Small tools. Real problems. Zero friction. Lightweight utilities that run entirely in your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+    --bg:#ffffff; --surface:#ffffff; --surface-2:#f5f5f7;
+    --text:#1d1d1f; --text-soft:#6e6e73;
+    --line:#d2d2d7; --line-strong:#c7c7cc;
+    --shadow:0 1px 2px rgba(0,0,0,.04), 0 6px 20px rgba(0,0,0,.05);
+    --font:'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      color-scheme: dark;
+      --bg:#000000; --surface:#1c1c1e; --surface-2:#2c2c2e;
+      --text:#f5f5f7; --text-soft:#98989d;
+      --line:#38383a; --line-strong:#48484a;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.4);
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:var(--font);color:var(--text);background:var(--bg);line-height:1.5;-webkit-font-smoothing:antialiased;padding:72px 20px 72px}
+  .wrap{max-width:720px;margin:0 auto}
+  header{margin-bottom:40px}
+  h1{font-weight:600;font-size:clamp(34px,7vw,54px);letter-spacing:-.03em;margin:0 0 12px;line-height:1}
+  .tag{margin:0;color:var(--text);font-size:17px;font-weight:500}
+  .tag2{margin:10px 0 0;color:var(--text-soft);font-size:15px;max-width:48ch}
+  .section-label{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-soft);margin:0 0 12px}
+  .tools{display:grid;grid-template-columns:1fr;gap:12px}
+  a.tool{display:flex;align-items:center;gap:16px;text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px 22px;box-shadow:var(--shadow);transition:border-color .15s, transform .08s}
+  a.tool:hover{border-color:var(--line-strong);transform:translateY(-1px)}
+  a.tool:active{transform:translateY(0)}
+  .tool .body{flex:1 1 auto;min-width:0}
+  .tool .name{font-weight:600;font-size:17px;letter-spacing:-.01em;margin:0 0 3px}
+  .tool .desc{color:var(--text-soft);font-size:14px;margin:0}
+  .tool .arrow{flex:0 0 auto;color:var(--text-soft);transition:transform .15s, color .15s}
+  a.tool:hover .arrow{transform:translateX(3px);color:var(--text)}
+  .principles{margin-top:52px;padding-top:28px;border-top:1px solid var(--line)}
+  .principles ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+  .principles li{font-size:13px;font-weight:500;color:var(--text);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:5px 13px}
+  .creed{margin:18px 0 0;color:var(--text-soft);font-size:14px}
+  footer{margin-top:40px;color:var(--text-soft);font-size:13px}
+  @media (max-width:560px){ body{padding:48px 16px 56px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>TrivialKits</h1>
+    <p class="tag">Small tools. Real problems. Zero friction.</p>
+    <p class="tag2">Lightweight utilities that help people get things done, without installations, accounts, or unnecessary complexity. Everything runs in your browser, so your files never leave your device.</p>
+  </header>
+
+  <p class="section-label">Tools</p>
+  <div class="tools">
+    <a class="tool" href="./pdf-combiner/">
+      <div class="body">
+        <p class="name">PDF Combiner &amp; Compressor</p>
+        <p class="desc">Merge PDFs or shrink them to a size you need. Keeps text and layout intact.</p>
+      </div>
+      <svg class="arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+
+    <!-- Add a tool: copy this block, point href to the new folder, edit name + desc.
+    <a class="tool" href="./tool-folder/">
+      <div class="body">
+        <p class="name">Tool name</p>
+        <p class="desc">One line on what it does.</p>
+      </div>
+      <svg class="arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+    -->
+  </div>
+
+  <div class="principles">
+    <ul>
+      <li>Fast</li><li>Private</li><li>Practical</li><li>Free</li><li>Browser-first</li>
+    </ul>
+    <p class="creed">Because not every problem needs a platform. Sometimes you just need a tool.</p>
+  </div>
+
+  <footer>Built by Ammar Irfan.</footer>
+</div>
+</body>
+</html>
