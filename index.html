@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TrivialKits</title>
 <meta name="description" content="Small tools. Real problems. Zero friction. Lightweight utilities that run entirely in your browser.">
+<link rel="icon" type="image/svg+xml" href="./assets/hub-logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -35,14 +36,16 @@
   .tag{margin:0;color:var(--text);font-size:17px;font-weight:500}
   .tag2{margin:10px 0 0;color:var(--text-soft);font-size:15px;max-width:48ch}
   .section-label{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-soft);margin:0 0 12px}
-  .tools{display:grid;grid-template-columns:1fr;gap:12px}
-  a.tool{display:flex;align-items:center;gap:16px;text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px 22px;box-shadow:var(--shadow);transition:border-color .15s, transform .08s}
+  .logo{display:block;width:64px;height:64px;margin:0 0 20px}
+  .tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  a.tool{display:flex;flex-direction:column;align-items:flex-start;gap:16px;text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:var(--shadow);transition:border-color .15s, transform .08s}
   a.tool:hover{border-color:var(--line-strong);transform:translateY(-1px)}
   a.tool:active{transform:translateY(0)}
+  .tool .icon{display:block;width:100%;max-width:80px;height:auto;aspect-ratio:1/1}
   .tool .body{flex:1 1 auto;min-width:0}
   .tool .name{font-weight:600;font-size:17px;letter-spacing:-.01em;margin:0 0 3px}
   .tool .desc{color:var(--text-soft);font-size:14px;margin:0}
-  .tool .arrow{flex:0 0 auto;color:var(--text-soft);transition:transform .15s, color .15s}
+  .tool .arrow{flex:0 0 auto;align-self:flex-end;color:var(--text-soft);transition:transform .15s, color .15s}
   a.tool:hover .arrow{transform:translateX(3px);color:var(--text)}
   .principles{margin-top:52px;padding-top:28px;border-top:1px solid var(--line)}
   .principles ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
@@ -50,11 +53,13 @@
   .creed{margin:18px 0 0;color:var(--text-soft);font-size:14px}
   footer{margin-top:40px;color:var(--text-soft);font-size:13px}
   @media (max-width:560px){ body{padding:48px 16px 56px} }
+  @media (max-width:420px){ .tools{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
+    <img class="logo" src="./assets/hub-logo.svg" alt="TrivialKits logo" width="64" height="64">
     <h1>TrivialKits</h1>
     <p class="tag">Small tools. Real problems. Zero friction.</p>
     <p class="tag2">Lightweight utilities that help people get things done, without installations, accounts, or unnecessary complexity. Everything runs in your browser, so your files never leave your device.</p>
@@ -63,6 +68,7 @@
   <p class="section-label">Tools</p>
   <div class="tools">
     <a class="tool" href="./pdf-combiner/">
+      <img class="icon" src="./assets/pdf-compressor.svg" alt="" width="80" height="80">
       <div class="body">
         <p class="name">PDF Combiner &amp; Compressor</p>
         <p class="desc">Merge PDFs or shrink them to a size you need. Keeps text and layout intact.</p>
@@ -71,6 +77,7 @@
     </a>
 
     <a class="tool" href="./image-compressor/">
+      <img class="icon" src="./assets/image-compressor.svg" alt="" width="80" height="80">
       <div class="body">
         <p class="name">Image Compressor</p>
         <p class="desc">Compress images to a target size, resize, and convert between JPEG, WebP and PNG. Batch and download as a ZIP.</p>
@@ -80,6 +87,7 @@
 
     <!-- Add a tool: copy this block, point href to the new folder, edit name + desc.
     <a class="tool" href="./tool-folder/">
+      <img class="icon" src="./assets/tool-folder.svg" alt="" width="80" height="80">
       <div class="body">
         <p class="name">Tool name</p>
         <p class="desc">One line on what it does.</p>
@@ -96,7 +104,7 @@
     <p class="creed">Because not every problem needs a platform. Sometimes you just need a tool.</p>
   </div>
 
-  <footer>Built by TrivialKit Crew.</footer>
+  <footer>Built by Ammar Irfan.</footer>
 </div>
 </body>
 </html>
