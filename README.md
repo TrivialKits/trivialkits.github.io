@@ -19,6 +19,9 @@ Because not every problem needs a platform. Sometimes you just need a tool.
 - **PDF Combiner & Compressor** — https://trivialkits.github.io/pdf-combiner/
   Merge PDFs in any order, or shrink them to a size you need. Compression keeps text and layout intact (it re-saves images and trims padded vector coordinates), with an optional flatten mode for strict size targets. Runs entirely on your device.
 
+- **Image Compressor** — https://trivialkits.github.io/image-compressor/
+  Compress images to a target size, resize to a max dimension, and convert between JPEG, WebP and PNG. Handles batches and downloads them as a ZIP, with before/after sizes shown per image. Runs entirely on your device.
+
 ## What TrivialKits is for
 
 1. **Solve small problems well.** Not every problem needs a SaaS subscription or an enterprise platform. Compress a PDF, optimize an image, format JSON, merge files.
